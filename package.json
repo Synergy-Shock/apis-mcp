@@ -1,0 +1,27 @@
+{
+  "name": "@modelcontextprotocol/servers",
+  "private": false,
+  "version": "0.0.0-development",
+  "description": "Model Context Protocol servers",
+  "license": "UNLICENSED",
+  "author": "Synergy Shock (https://synergyshock.com)",
+  "homepage": "https://synergyshock.com",
+  "bugs": "https://github.com/synergy-shock/apis-mcp/issues",
+  "type": "module",
+  "bin": {
+    "mcp-server": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc && shx chmod +x dist/*.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "semantic-release": "^24.2.3",
+    "shx": "^0.4.0",
+    "typescript": "^5.8.3"
+  }
+}
