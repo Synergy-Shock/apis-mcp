@@ -1,6 +1,10 @@
 {
   "name": "@synergy-shock/mcp-server",
   "private": false,
+  "publishConfig": {
+    "provenance": true,
+    "access": "public"
+  },
   "version": "0.0.0-development",
   "description": "Model Context Protocol servers",
   "license": "UNLICENSED",
