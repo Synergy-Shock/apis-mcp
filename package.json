@@ -1,5 +1,5 @@
 {
-  "name": "@modelcontextprotocol/servers",
+  "name": "@synergy-shock/mcp-server",
   "private": false,
   "version": "0.0.0-development",
   "description": "Model Context Protocol servers",
@@ -12,7 +12,8 @@
     "mcp-server": "dist/index.js"
   },
   "scripts": {
-    "build": "tsc && shx chmod +x dist/*.js"
+    "build": "tsc && shx chmod +x dist/*.js",
+    "release": "semantic-release"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.1",

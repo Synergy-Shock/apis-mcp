@@ -8,6 +8,11 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # to be able to publish a GitHub release
+      issues: write # to be able to comment on released issues
+      pull-requests: write # to be able to comment on released pull requests
+      id-token: write # to enable use of OIDC for npm provenance
     steps:
       - uses: actions/checkout@v4
 
@@ -15,9 +20,14 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
+          registry-url: https://registry.npmjs.org/
+          scope: '@synergy-shock'
 
       - run: npm install --no-audit --prefer-offline
 
-      - run: npm run build
+      - run: node --run build
 
-      - run: ls dist
+      - run: node --run release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
