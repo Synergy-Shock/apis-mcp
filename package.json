@@ -6,12 +6,16 @@
     "access": "public"
   },
   "version": "0.0.0-development",
-  "description": "Model Context Protocol servers",
+  "description": "API Hub MCP Servers",
   "license": "UNLICENSED",
   "author": "Synergy Shock (https://synergyshock.com)",
   "homepage": "https://synergyshock.com",
   "bugs": "https://github.com/synergy-shock/apis-mcp/issues",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/synergy-shock/apis-mcp.git"
+  },
   "bin": {
     "mcp-server": "dist/index.js"
   },
