@@ -57,20 +57,33 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const tools = await getTools("star-wars-api");
   const map = new Map(tools.map((tool) => [tool.name, tool]));
 
+  if (!request.params.arguments) {
+    return {
+      isError: true,
+      content: [{
+        type: "text",
+        text: `Error: Arguments are required`
+      }],
+    };
+  }
+
+  const tool = map.get(request.params.name);
+  if (!tool) {
+    return {
+      isError: true,
+      content: [{
+        type: "text",
+        text: `Error: Unknown tool: ${request.params.name}`
+      }],
+    };
+  }
+
+  // Parse the tool path to find path parameters
+  const url = new URL(tool.endpoint); // This is now a full URL with the API gateway prefix
+  const requestBody: Record<string, unknown> = {};
+  const requestArgs: Record<string, unknown> = request.params.arguments || {};
+
   try {
-    if (!request.params.arguments) {
-      throw new Error("Arguments are required");
-    }
-
-    const tool = map.get(request.params.name);
-    if (!tool) {
-      throw new Error(`Unknown tool: ${request.params.name}`);
-    }
-
-    // Parse the tool path to find path parameters
-    const url = new URL(tool.endpoint); // This is now a full URL with the API gateway prefix
-    const requestBody: Record<string, unknown> = {};
-    const requestArgs: Record<string, unknown> = { id: '4' } // || request.params.arguments || {};
 
     // Process arguments based on their paramType
     if (tool.inputSchema && tool.inputSchema.properties) {
@@ -90,14 +103,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         if (paramType === ParamType.Path) {
           // Collect path parameters
-          url.pathname = url.pathname.replace(`{${paramName}}`, String(value));
+          url.pathname = url.pathname.replace(`%7B${paramName}%7D`, String(value));
 
         } else if (paramType === ParamType.Query) {
           // Add query parameters
           url.searchParams.append(paramName, String(value));
 
-        } else if (paramType === ParamType.Body) {
-          // Collect body parameters
+        } else if (paramType === ParamType.Body) {          // Collect body parameters
           requestBody[paramName] = value;
         }
       }
@@ -122,11 +134,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         isError: true,
         content: [{
           type: "text",
-          text: `Error: ${response.status} ${response.statusText}\n${responseBody}`
+          text: `Error: ${response.status} ${response.statusText}\n${responseBody} for ${url.toString()} with args ${JSON.stringify(request.params.arguments)} and body ${JSON.stringify(tool.inputSchema.properties)}`
         }],
       };
     }
-
 
     return {
       content: [{ type: "text", text: responseBody }],
