@@ -24,14 +24,6 @@ const server = new Server(
   }
 );
 
-type ApiHubTools = {
-  name: string
-  description: string
-  path: string
-  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
-  inputSchema: any
-}
-
 const getTools = memo(async (apiId: string) => {
   // console.log(JSON.stringify({ message: "Getting tools for" + process.argv0 }));
   const response = await fetch(`${API_GATEWAY_URL}/docs/${apiId}/swagger`);
@@ -39,8 +31,8 @@ const getTools = memo(async (apiId: string) => {
   return extractToolsFromSwagger(apiId, body);
 }, { key: (name: any) => name, ttl: Infinity });
 
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-  const tools = await getTools("star-wars-api");
+server.setRequestHandler(ListToolsRequestSchema, async (req) => {
+  const tools = await getTools(process.argv[1]);
   return {
     tools: tools.map((tool) => ({
       name: tool.name,
@@ -54,7 +46,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 });
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const tools = await getTools("star-wars-api");
+  const tools = await getTools(process.argv[1]);
   const map = new Map(tools.map((tool) => [tool.name, tool]));
 
   if (!request.params.arguments) {
