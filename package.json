@@ -36,7 +36,8 @@
     "typescript": "^5.8.3"
   },
   "exports": {
-    "swagger": "./dist/swagger.js"
+    ".": "./dist/index.js",
+    "./swagger": "./dist/swagger.js"
   },
   "release": {
     "branches": [
