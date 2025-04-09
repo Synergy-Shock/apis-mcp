@@ -14,7 +14,7 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/synergy-shock/apis-mcp.git"
+    "url": "https://github.com/Synergy-Shock/apis-mcp"
   },
   "bin": {
     "mcp-server": "dist/index.js"
