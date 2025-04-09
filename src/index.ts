@@ -6,10 +6,15 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from 'zod';
+import { memo } from 'radash';
+import { extractToolsFromSwagger, ParamType } from "./swagger.js";
+
+const API_GATEWAY_URL = process.env.API_GATEWAY_URL || "https://apis-hub.synergyshock.com/api";
+const API_HUB_TOKEN = process.env.API_HUB_TOKEN!
 
 const server = new Server(
   {
-    name: "github-mcp-server",
+    name: "api-hub",
     version: '0.0.0-development',
   },
   {
@@ -19,42 +24,126 @@ const server = new Server(
   }
 );
 
+type ApiHubTools = {
+  name: string
+  description: string
+  path: string
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
+  inputSchema: any
+}
+
+const getTools = memo(async (apiId: string) => {
+  // console.log(JSON.stringify({ message: "Getting tools for" + process.argv0 }));
+  const response = await fetch(`${API_GATEWAY_URL}/docs/${apiId}/swagger`);
+  const body = await response.json();
+  return extractToolsFromSwagger(apiId, body);
+}, { key: (name: any) => name, ttl: Infinity });
+
 server.setRequestHandler(ListToolsRequestSchema, async () => {
+  const tools = await getTools("star-wars-api");
   return {
-    tools: [
-      {
-        name: "say_hello",
-        description: "Respond with a friendly greeting",
-        inputSchema: z.object({
-          name: z.string().describe("The name of the person to greet"),
-        }),
-      },
-    ],
+    tools: tools.map((tool) => ({
+      name: tool.name,
+      description: tool.description,
+      inputSchema: {
+        type: "object",
+        properties: {}
+      }
+    }))
   };
 });
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const tools = await getTools("star-wars-api");
+  const map = new Map(tools.map((tool) => [tool.name, tool]));
+
   try {
     if (!request.params.arguments) {
       throw new Error("Arguments are required");
     }
 
-    switch (request.params.name) {
-      case "say_hello": {
-        return {
-          content: [{ type: "text", text: `Hello, ${request.params.arguments.name}!` }],
-        };
-      }
-
-      default:
-        throw new Error(`Unknown tool: ${request.params.name}`);
+    const tool = map.get(request.params.name);
+    if (!tool) {
+      throw new Error(`Unknown tool: ${request.params.name}`);
     }
+
+    // Parse the tool path to find path parameters
+    const url = new URL(tool.endpoint); // This is now a full URL with the API gateway prefix
+    const requestBody: Record<string, unknown> = {};
+    const requestArgs: Record<string, unknown> = { id: '4' } // || request.params.arguments || {};
+
+    // Process arguments based on their paramType
+    if (tool.inputSchema && tool.inputSchema.properties) {
+      for (const [paramName, paramSchema] of Object.entries(tool.inputSchema.properties)) {
+        if (!(paramName in requestArgs)) {
+
+          if (tool.inputSchema.required && tool.inputSchema.required.includes(paramName)) {
+            throw new Error(`Missing required argument: ${paramName}`);
+          }
+
+          continue;
+        }
+
+        const param = paramSchema as Record<string, unknown>;
+        const paramType = param.paramType as string || 'query';
+        const value = requestArgs[paramName];
+
+        if (paramType === ParamType.Path) {
+          // Collect path parameters
+          url.pathname = url.pathname.replace(`{${paramName}}`, String(value));
+
+        } else if (paramType === ParamType.Query) {
+          // Add query parameters
+          url.searchParams.append(paramName, String(value));
+
+        } else if (paramType === ParamType.Body) {
+          // Collect body parameters
+          requestBody[paramName] = value;
+        }
+      }
+    }
+
+    const requestInit: RequestInit = {
+      method: tool.method,
+      headers: {
+        "Authorization": `Bearer ${API_HUB_TOKEN}`,
+        "Content-Type": "application/json",
+      }
+    }
+
+    if (tool.method !== 'GET' && tool.method !== 'DELETE') {
+      requestInit.body = JSON.stringify(requestBody);
+    }
+
+    const response = await fetch(url, requestInit)
+    const responseBody = await response.text();
+    if (!response.ok) {
+      return {
+        isError: true,
+        content: [{
+          type: "text",
+          text: `Error: ${response.status} ${response.statusText}\n${responseBody}`
+        }],
+      };
+    }
+
+
+    return {
+      content: [{ type: "text", text: responseBody }],
+    };
+
   } catch (error) {
     if (error instanceof z.ZodError) {
       throw new Error(`Invalid input: ${JSON.stringify(error.errors)}`);
     }
 
-    throw error;
+    return {
+      isError: true,
+      content: [{
+        type: "text",
+        text: `Error: ${error instanceof Error ? error.message : String(error)}`
+      }],
+    };
   }
 });
 

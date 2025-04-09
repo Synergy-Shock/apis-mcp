@@ -16,11 +16,13 @@
     "mcp-server": "dist/index.js"
   },
   "scripts": {
-    "build": "tsc && shx chmod +x dist/*.js",
+    "build": "rm -rf dist && tsc -p . && shx chmod +x dist/*.js",
     "release": "semantic-release"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.1",
+    "@openapi-contrib/openapi-schema-to-json-schema": "^5.1.0",
+    "radash": "^12.1.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {
@@ -28,6 +30,9 @@
     "semantic-release": "^24.2.3",
     "shx": "^0.4.0",
     "typescript": "^5.8.3"
+  },
+  "exports": {
+    "swagger": "./dist/swagger.js"
   },
   "release": {
     "branches": [
