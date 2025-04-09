@@ -78,7 +78,7 @@ type JsonValue = string | number | boolean | null | { [key: string]: JsonValue }
 /**
  * Extract tools array from Swagger/OpenAPI specification
  */
-export function extractToolsFromSwagger(apiId: string, swaggerData: SwaggerDocument): Tool[] {
+export function extractToolsFromSwagger(apiId: string, swaggerData: SwaggerDocument, options: { baseUrl?: string } = {}): Tool[] {
   const tools: Tool[] = [];
   const paths = swaggerData.paths || {};
 
@@ -113,7 +113,7 @@ export function extractToolsFromSwagger(apiId: string, swaggerData: SwaggerDocum
           name: operationId,
           description:
             operation.description || operation.summary || `${method.toUpperCase()} ${path}`,
-          endpoint: `${API_GATEWAY_URL}/use/${apiId}/${path}`,
+          endpoint: `${options.baseUrl || API_GATEWAY_URL}/use/${apiId}${path}`,
           method: method.toUpperCase(),
           inputSchema: inputSchema,
         });
